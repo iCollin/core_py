@@ -1,10 +1,15 @@
 # core_py
 
-core management script written in python, most used features:
+[sdl_core](https://github.com/smartdevicelink/sdl_core) management script written in python, most used features:
 
 - creating builds
 - switching atf target
 - shortcuts to manage core configuration
+
+to get started, just update the following path variables in core.py:
+
+- `BUILDS_DIRECTORY`: where all core builds will be stored
+- `ATF_DIRECTORY`: should point to installed and built version of [sdl_atf](https://github.com/smartdevicelink/sdl_atf) (only necessary for `test` command)
 
 ```
 python core.py list
