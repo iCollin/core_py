@@ -118,13 +118,14 @@ def selected_build(string):
 
     return build_name
 
-__cores = None
 def get_cores():
-    if __cores is None:
+    if get_cores.n is 0:
         import multiprocessing
-        __cores = multiprocessing.cpu_count() - 1
+        n = multiprocessing.cpu_count() - 1
+        get_cores.n = int(n) if '-j' in sys.argv else int(n / 2)
     
-    return int(__cores) if '-j' in sys.argv else int(__cores / 2)
+    return get_cores.n
+get_cores.n = 0
 
 #########################################
 #               COMMANDS                #
@@ -170,26 +171,36 @@ def create_callback():
     os.mkdir(BUILDS_DIRECTORY + build_name + '/core_build')
     subprocess.call(['touch', BUILDS_DIRECTORY + build_name + '/.created'])
 
-    build_branch = sys.argv[sys.argv.index('-b') + 1] if '-b' in sys.argv else ''
-    build_tests = '-t' in sys.argv
-    build_ext_prop = '-e' in sys.argv
-    build_http = '-h' in sys.argv
-    build_iap2_emu = '-i' in sys.argv
-    build_release_mode = '-r' in sys.argv
 
     os.chdir(BUILDS_DIRECTORY + build_name)
     repo = REPO_URL
+
+    build_branch = sys.argv[sys.argv.index('-b') + 1] if '-b' in sys.argv else 'develop'
     custom_remote = ':' in build_branch
     if custom_remote:
         colon_index = build_branch.index(':')
         repo = REPO_URL.replace('smartdevicelink', build_branch[:colon_index])
         build_branch = build_branch[colon_index+1:]
-    subprocess.call(['git', 'clone', '--recurse-submodules', '-j', str(int(get_cores() / 2)), '-b', build_branch, repo])
+    subprocess.call(['git', 'clone', '--recurse-submodules', '-j', str(get_cores()), '-b', build_branch, repo])
 
     os.chdir(BUILDS_DIRECTORY + build_name + '/core_build')
+    cmake_callback()
+    
+    subprocess.call(['time', 'make', '-j', str(get_cores()), 'install'])
+
+def cmake_callback():
+    build_tests = '-t' in sys.argv
+    build_coverage = '-g' in sys.argv
+    build_iap2_emu = '-i' in sys.argv
+    build_release_mode = '-r' in sys.argv
+    build_ext_prop = '-e' in sys.argv
+    build_http = '-h' in sys.argv
+
     cmake_args = ['cmake', '../sdl_core']
     if build_tests:
         cmake_args.append('-DBUILD_TESTS=ON')
+    if build_coverage:
+        cmake_args.append('-DENABLE_GCOV=ON')
     if build_iap2_emu:
         cmake_args.append('-DENABLE_IAP2EMULATION=ON')
     if build_release_mode:
@@ -199,7 +210,9 @@ def create_callback():
     elif build_http:
         cmake_args.append('-DEXTENDED_POLICY=HTTP')
     subprocess.call(cmake_args)
-    
+
+def make_callback():
+    cmake_callback()
     subprocess.call(['time', 'make', '-j', str(get_cores()), 'install'])
 
 def ut_callback():
@@ -296,6 +309,25 @@ def pt_callback():
 def ini_callback():
     subprocess.call(['vim', BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'])
 
+def ps_callback():
+    ps_output = subprocess.check_output(['ps', 'aux'])
+    ps_o_lines = ps_output.split('\n')
+    user_name = os.getlogin()
+    for line in ps_o_lines:
+        if user_name in line and 'smartDeviceLinkCore' in line:
+            print(line)
+
+def style_callback():
+    subprocess_args = ['./tools/infrastructure/check_style.sh']
+    if '-f' in sys.argv:
+        subprocess_args.append('--fix')
+    exit_code = subprocess.call(subprocess_args, cwd=(BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/sdl_core'))
+    if exit_code is 0:
+        print cprint.OKGREEN + 'style of ' + sys.argv[2] + ' is good' + cprint.ENDC
+    else:
+        print cprint.FAIL + 'style of ' + sys.argv[2] + ' has problems' + cprint.ENDC 
+
+
 def help_callback():
     for cmd in supported_commands:
         print ''
@@ -314,6 +346,19 @@ supported_commands = [
             InputCommandArgument('i', 'build with -DENABLE_IAP2EMULATION=ON', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('j', 'build fast with all cores the cpu has', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('b', 'specify a branch to build from remote', InputCommandArgumentType.REQUIRED) ]),
+    InputCommand('cmake', cmake_callback, 'temp cmd, script will be rewritten soon to support multiple build configurations per clone of sdl_core code', arguments = [
+            InputCommandArgument('t', 'build with tests', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('r', 'build in release mode', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('e', 'build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('h', 'build with -DEXTENDED_POLICY=HTTP', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('i', 'build with -DENABLE_IAP2EMULATION=ON', InputCommandArgumentType.OPTIONAL) ]),
+    InputCommand('make', make_callback, 'cmake and then make lol', arguments = [
+            InputCommandArgument('j', 'build fast with all cores the cpu has', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('t', 'build with tests', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('r', 'build in release mode', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('e', 'build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('h', 'build with -DEXTENDED_POLICY=HTTP', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('i', 'build with -DENABLE_IAP2EMULATION=ON', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('ut', ut_callback, 'run the unit tests on an existing build', arguments = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
     InputCommand('test', test_callback, 'update atf to target a specific build for testing', [ 'atf' ], [
@@ -334,7 +379,7 @@ supported_commands = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build'),
             InputCommandArgument('s', 'go directly to the source directory', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('b', 'go directly to the build directory', InputCommandArgumentType.OPTIONAL) ],
-        notes = [ 'use like this: $(core cd 0)' ]),
+            notes = [ 'use like this: $(core cd 0)' ]),
     InputCommand('scp', scp_callback, 'print the command to scp the bin/ folder of a build from this host', arguments = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build'),
             InputCommandArgument('f', 'grab full build folder', InputCommandArgumentType.OPTIONAL) ]),
@@ -344,6 +389,9 @@ supported_commands = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
     InputCommand('ini', ini_callback, 'open the ini config of a build in vim', arguments = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
+    InputCommand('style', style_callback, 'check style of a build', arguments = [
+            InputCommandArgument('f', 'fix style of a build', InputCommandArgumentType.OPTIONAL) ]),
+    InputCommand('ps', ps_callback, 'list the ps output matching smartDeviceLinkCore'),
     InputCommand('help', help_callback, 'learn how to use this script', ['?'])
 ]
 
