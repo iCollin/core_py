@@ -123,6 +123,22 @@ python core.py ini <build>
 	 note:
 		 build can be the number shown with list or the name of the build
 
+python core.py ini <build>
+         description:
+                 open the ini config of a build in vim
+         note:
+                 build can be the number shown with list or the name of the build
+
+python core.py style
+         description:
+                 check style of a build
+         optional parameters:
+           -f    fix style of a build
+
+python core.py ps
+         description:
+                 list the ps output matching smartDeviceLinkCore
+
 python core.py help
 	 aliases:
 		?
