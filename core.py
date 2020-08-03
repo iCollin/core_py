@@ -122,8 +122,9 @@ def get_cores():
     if get_cores.n is 0:
         import multiprocessing
         n = multiprocessing.cpu_count() - 1
-        get_cores.n = int(n) if '-j' in sys.argv else int(n / 2)
-    
+        n = (n, 1)[n < 1]
+        get_cores.n = n if '-j' in sys.argv else int(n / 2)
+
     return get_cores.n
 get_cores.n = 0
 
@@ -151,10 +152,13 @@ def list_callback():
             git_branch = next(x for x in subprocess.check_output(['git', 'branch']).split('\n') if x[0] == '*')
             print cprint.AQUA + '\t' + git_branch + cprint.ENDC
             git_log = subprocess.check_output(['git', 'log', '-1'])
-            git_info = [ log for log in git_log.split('\n') if log.strip() != '' ][:5]
+            git_info = [ log for log in git_log.split('\n') if log.strip() != '' ]
+            logLinesAllowed = 8
             for info in git_info:
-                if len(info.strip()) > 1:
-                    print cprint.OKBLUE + '\t' + info + cprint.ENDC
+                print cprint.OKBLUE + '\t' + info + cprint.ENDC
+                logLinesAllowed = logLinesAllowed - 1
+                if logLinesAllowed < 1:
+                    break
 
 def create_callback():
     build_name = sys.argv[2]
@@ -170,7 +174,6 @@ def create_callback():
     os.mkdir(BUILDS_DIRECTORY + build_name)
     os.mkdir(BUILDS_DIRECTORY + build_name + '/core_build')
     subprocess.call(['touch', BUILDS_DIRECTORY + build_name + '/.created'])
-
 
     os.chdir(BUILDS_DIRECTORY + build_name)
     repo = REPO_URL
@@ -189,25 +192,18 @@ def create_callback():
     subprocess.call(['time', 'make', '-j', str(get_cores()), 'install'])
 
 def cmake_callback():
-    build_tests = '-t' in sys.argv
-    build_coverage = '-g' in sys.argv
-    build_iap2_emu = '-i' in sys.argv
-    build_release_mode = '-r' in sys.argv
-    build_ext_prop = '-e' in sys.argv
-    build_http = '-h' in sys.argv
-
     cmake_args = ['cmake', '../sdl_core']
-    if build_tests:
+    if '-t' in sys.argv:
         cmake_args.append('-DBUILD_TESTS=ON')
-    if build_coverage:
+    if '-g' in sys.argv:
         cmake_args.append('-DENABLE_GCOV=ON')
-    if build_iap2_emu:
+    if '-i' in sys.argv:
         cmake_args.append('-DENABLE_IAP2EMULATION=ON')
-    if build_release_mode:
+    if '-r' in sys.argv:
         cmake_args.append('-DCMAKE_BUILD_TYPE=Release')
-    if build_ext_prop:
+    if '-e' in sys.argv:
         cmake_args.append('-DEXTENDED_POLICY=EXTERNAL_PROPRIETARY')
-    elif build_http:
+    elif '-h' in sys.argv:
         cmake_args.append('-DEXTENDED_POLICY=HTTP')
     subprocess.call(cmake_args)
 
@@ -314,7 +310,7 @@ def ps_callback():
     ps_o_lines = ps_output.split('\n')
     user_name = os.getlogin()
     for line in ps_o_lines:
-        if user_name in line and 'smartDeviceLinkCore' in line:
+        if ('-a' in sys.argv or user_name in line) and 'smartDeviceLinkCore' in line:
             print(line)
 
 def style_callback():
@@ -326,7 +322,6 @@ def style_callback():
         print cprint.OKGREEN + 'style of ' + sys.argv[2] + ' is good' + cprint.ENDC
     else:
         print cprint.FAIL + 'style of ' + sys.argv[2] + ' has problems' + cprint.ENDC 
-
 
 def help_callback():
     for cmd in supported_commands:
@@ -346,7 +341,7 @@ supported_commands = [
             InputCommandArgument('i', 'build with -DENABLE_IAP2EMULATION=ON', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('j', 'build fast with all cores the cpu has', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('b', 'specify a branch to build from remote', InputCommandArgumentType.REQUIRED) ]),
-    InputCommand('cmake', cmake_callback, 'temp cmd, script will be rewritten soon to support multiple build configurations per clone of sdl_core code', arguments = [
+    InputCommand('cmake', cmake_callback, 'run a cmake command using ../sdl_core', arguments = [
             InputCommandArgument('t', 'build with tests', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('r', 'build in release mode', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('e', 'build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY', InputCommandArgumentType.OPTIONAL),
@@ -391,7 +386,8 @@ supported_commands = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
     InputCommand('style', style_callback, 'check style of a build', arguments = [
             InputCommandArgument('f', 'fix style of a build', InputCommandArgumentType.OPTIONAL) ]),
-    InputCommand('ps', ps_callback, 'list the ps output matching smartDeviceLinkCore'),
+    InputCommand('ps', ps_callback, 'list the ps output matching smartDeviceLinkCore', arguments = [
+            InputCommandArgument('a', 'display instances from all users', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('help', help_callback, 'learn how to use this script', ['?'])
 ]
 

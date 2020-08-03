@@ -38,6 +38,27 @@ python core.py create <name>
 	   -i    build with -DENABLE_IAP2EMULATION=ON
 	   -j    build fast with all cores the cpu has
 
+python core.py cmake
+	 description:
+		 run a cmake command using ../sdl_core
+	 optional parameters:
+	   -t    build with tests
+	   -r    build in release mode
+	   -e    build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY
+	   -h    build with -DEXTENDED_POLICY=HTTP
+	   -i    build with -DENABLE_IAP2EMULATION=ON
+
+python core.py make
+	 description:
+		 cmake and then make
+	 optional parameters:
+	   -j    build fast with all cores the cpu has
+	   -t    build with tests
+	   -r    build in release mode
+	   -e    build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY
+	   -h    build with -DEXTENDED_POLICY=HTTP
+	   -i    build with -DENABLE_IAP2EMULATION=ON
+
 python core.py ut <build>
 	 description:
 		 run the unit tests on an existing build
@@ -123,21 +144,17 @@ python core.py ini <build>
 	 note:
 		 build can be the number shown with list or the name of the build
 
-python core.py ini <build>
-         description:
-                 open the ini config of a build in vim
-         note:
-                 build can be the number shown with list or the name of the build
-
 python core.py style
-         description:
-                 check style of a build
-         optional parameters:
-           -f    fix style of a build
+	 description:
+		 check style of a build
+	 optional parameters:
+	   -f    fix style of a build
 
 python core.py ps
-         description:
-                 list the ps output matching smartDeviceLinkCore
+	 description:
+		 list the ps output matching smartDeviceLinkCore
+	 optional parameters:
+	   -a    display instances from all users
 
 python core.py help
 	 aliases:
