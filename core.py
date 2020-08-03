@@ -347,7 +347,7 @@ supported_commands = [
             InputCommandArgument('e', 'build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('h', 'build with -DEXTENDED_POLICY=HTTP', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('i', 'build with -DENABLE_IAP2EMULATION=ON', InputCommandArgumentType.OPTIONAL) ]),
-    InputCommand('make', make_callback, 'cmake and then make lol', arguments = [
+    InputCommand('make', make_callback, 'cmake and then make', arguments = [
             InputCommandArgument('j', 'build fast with all cores the cpu has', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('t', 'build with tests', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('r', 'build in release mode', InputCommandArgumentType.OPTIONAL),
