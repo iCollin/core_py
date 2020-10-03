@@ -156,6 +156,18 @@ python core.py ps
 	 optional parameters:
 	   -a    display instances from all users
 
+python core.py gst <build>
+         description:
+                 stream audio or video from core via gstreamer
+         note:
+                 build can be the number shown with list or the name of the build
+                 must supply one of -a or -v and one of -s or -p
+         optional parameters:
+           -s    stream via socket
+           -p    stream via pipe
+           -a    stream audio
+           -v    stream video
+
 python core.py help
 	 aliases:
 		?

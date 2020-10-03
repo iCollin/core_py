@@ -323,6 +323,36 @@ def style_callback():
     else:
         print cprint.FAIL + 'style of ' + sys.argv[2] + ' has problems' + cprint.ENDC 
 
+def gst_callback():
+    subprocess_args = ['gst-launch-1.0']
+    
+    if '-p' in sys.argv:
+        subprocess_args.append('filesrc')
+        pipe_name = 'audio_stream_pipe' if '-a' in sys.argv else 'video_stream_pipe'
+        subprocess_args.append('location=' + BUILDS_DIRECTORY + selected_build(sys.argv[2])
+            + '/core_build/bin/storage/' + pipe_name)
+    else:
+        subprocess_args.append('souphttpsrc')
+        port = '5080' if '-a' in sys.argv else '5050'
+        subprocess_args.append('location=http://127.0.0.1:' + port)
+    
+    subprocess_args.append('!')
+
+    if '-a' in sys.argv:
+        subprocess_args.append('audio/x-raw,format=S16LE,rate=16000,channels=1')
+        subprocess_args.append('!')
+        subprocess_args.append('pulsesink')
+    else:
+        subprocess_args.append('decodebin')
+        subprocess_args.append('!')
+        subprocess_args.append('videoconvert')
+        subprocess_args.append('!')
+        subprocess_args.append('cacasink')
+        subprocess_args.append('sync=false')
+
+    print subprocess_args
+    subprocess.call(subprocess_args)
+
 def help_callback():
     for cmd in supported_commands:
         print ''
@@ -388,6 +418,13 @@ supported_commands = [
             InputCommandArgument('f', 'fix style of a build', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('ps', ps_callback, 'list the ps output matching smartDeviceLinkCore', arguments = [
             InputCommandArgument('a', 'display instances from all users', InputCommandArgumentType.OPTIONAL) ]),
+    InputCommand('gst', gst_callback, 'stream audio or video from core via gstreamer', arguments = [
+            InputCommandArgument('build', 'build can be the number shown with list or the name of the build'),
+            InputCommandArgument('s', 'stream via socket', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('p', 'stream via pipe', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('a', 'stream audio', InputCommandArgumentType.OPTIONAL),
+            InputCommandArgument('v', 'stream video', InputCommandArgumentType.OPTIONAL) ],
+            notes = [ 'must supply one of -a or -v and one of -s or -p' ]),
     InputCommand('help', help_callback, 'learn how to use this script', ['?'])
 ]
 
