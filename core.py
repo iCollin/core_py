@@ -12,6 +12,11 @@ BUILDS_DIRECTORY=MASTER_DIRECTORY + 'builds/'
 REPO_URL='https://github.com/smartdevicelink/sdl_core'
 ATF_DIRECTORY=MASTER_DIRECTORY+'atf/sdl_atf/'
 
+FILE_EDITOR='nvim' # vim gedit
+LOG_VIEWER='lnav' # vim cat
+GST_VIDEO_SINK='cacasink' # xvimagesink ximagesink cacasink
+GST_AUDIO_SINK='pulsesink'
+
 if len(sys.argv) < 2:
     print('correct usage: \'python core.py <command>\'')
     print('try \'python core.py help\' for more information')
@@ -297,13 +302,13 @@ def scp_callback():
     print cprint.AQUA + '\t\tscp -r livio@jenkins.livio.io:' + BUILDS_DIRECTORY + build_name + '/core_build' + ('' if '-f' in sys.argv else '/bin') + ' ./' + build_name
 
 def lnav_callback():
-    subprocess.call(['lnav', BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/SmartDeviceLinkCore.log'])
+    subprocess.call([LOG_VIEWER, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/SmartDeviceLinkCore.log'])
 
 def pt_callback():
-    subprocess.call(['vim', BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/sdl_preloaded_pt.json'])
+    subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/sdl_preloaded_pt.json'])
 
 def ini_callback():
-    subprocess.call(['vim', BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'])
+    subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'])
 
 def ps_callback():
     ps_output = subprocess.check_output(['ps', 'aux'])
@@ -341,13 +346,13 @@ def gst_callback():
     if '-a' in sys.argv:
         subprocess_args.append('audio/x-raw,format=S16LE,rate=16000,channels=1')
         subprocess_args.append('!')
-        subprocess_args.append('pulsesink')
+        subprocess_args.append(GST_AUDIO_SINK)
     else:
         subprocess_args.append('decodebin')
         subprocess_args.append('!')
         subprocess_args.append('videoconvert')
         subprocess_args.append('!')
-        subprocess_args.append('cacasink')
+        subprocess_args.append(GST_VIDEO_SINK)
         subprocess_args.append('sync=false')
 
     print subprocess_args
