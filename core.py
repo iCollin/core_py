@@ -315,7 +315,7 @@ def ps_callback():
 
 def style_callback():
     subprocess_args = ['./tools/infrastructure/check_style.sh']
-    if '-f' in sys.argv:
+    if '-f' in sys.argv or '--fix' in sys.argv:
         subprocess_args.append('--fix')
     exit_code = subprocess.call(subprocess_args, cwd=(BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/sdl_core'))
     if exit_code is 0:
