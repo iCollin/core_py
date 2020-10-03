@@ -133,6 +133,19 @@ def get_cores():
     return get_cores.n
 get_cores.n = 0
 
+def ini_value(key):
+    if not ini_value.ini_lines:
+        ini_value.ini_lines = []
+        for line in open(BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'):
+            if not line.startswith(';'):
+                ini_value.ini_lines.append(line)
+    for ini_line in ini_value.ini_lines:
+        if ini_line.startswith(key):
+            return ini_line.split('=')[1].strip()
+    print key + ' NOT FOUND IN INI'
+    exit(1)
+ini_value.ini_lines = []
+
 #########################################
 #               COMMANDS                #
 #########################################
@@ -287,8 +300,8 @@ def update_callback():
 def run_callback():
     os.chdir(BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin')
     if '-k' not in sys.argv:
-        subprocess.call(['rm', '-rf', 'storage'])
-        subprocess.call(['rm', '-rf', 'app_info.dat'])
+        subprocess.call(['rm', '-rf', ini_value('AppStorageFolder')])
+        subprocess.call(['rm', '-rf', ini_value('AppInfoStorage')])
         subprocess.call(['rm', '-rf', 'SmartDeviceLinkCore.log'])
     subprocess.call(['./smartDeviceLinkCore'], env=dict(os.environ, LD_LIBRARY_PATH="."))
 
@@ -305,10 +318,13 @@ def lnav_callback():
     subprocess.call([LOG_VIEWER, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/SmartDeviceLinkCore.log'])
 
 def pt_callback():
-    subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/sdl_preloaded_pt.json'])
+    subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/' + ini_value('PreloadedPT')])
 
 def ini_callback():
-    subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'])
+    if len(sys.argv) > 3:
+        print ini_value(sys.argv[3])
+    else:
+        subprocess.call([FILE_EDITOR, BUILDS_DIRECTORY + selected_build(sys.argv[2]) + '/core_build/bin/smartDeviceLink.ini'])
 
 def ps_callback():
     ps_output = subprocess.check_output(['ps', 'aux'])
@@ -330,20 +346,26 @@ def style_callback():
 
 def gst_callback():
     subprocess_args = ['gst-launch-1.0']
+
+    is_audio = '-a' in sys.argv
+    stream_type = ('Audio' if is_audio else 'Video')
+    consumer_ini_key = stream_type + 'StreamConsumer'
+    consumer = ini_value(consumer_ini_key)
     
-    if '-p' in sys.argv:
+    if consumer is 'pipe':
         subprocess_args.append('filesrc')
-        pipe_name = 'audio_stream_pipe' if '-a' in sys.argv else 'video_stream_pipe'
+        pipe_path_ini_key = 'Named' + stream_type + 'PipePath'
+        pipe_name = ini_value(pipe_path_ini_key)
         subprocess_args.append('location=' + BUILDS_DIRECTORY + selected_build(sys.argv[2])
-            + '/core_build/bin/storage/' + pipe_name)
+            + '/core_build/bin/' + ini_value('AppStorageFolder') + '/' + pipe_name)
     else:
         subprocess_args.append('souphttpsrc')
-        port = '5080' if '-a' in sys.argv else '5050'
+        port = ini_value(stream_type + 'StreamingPort')
         subprocess_args.append('location=http://127.0.0.1:' + port)
     
     subprocess_args.append('!')
 
-    if '-a' in sys.argv:
+    if is_audio:
         subprocess_args.append('audio/x-raw,format=S16LE,rate=16000,channels=1')
         subprocess_args.append('!')
         subprocess_args.append(GST_AUDIO_SINK)
@@ -418,18 +440,17 @@ supported_commands = [
     InputCommand('pt', pt_callback, 'open the preloaded policy table of a build in vim', arguments = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
     InputCommand('ini', ini_callback, 'open the ini config of a build in vim', arguments = [
-            InputCommandArgument('build', 'build can be the number shown with list or the name of the build') ]),
+            InputCommandArgument('build', 'build can be the number shown with list or the name of the build'),
+            InputCommandArgument('<key>', 'read the value of a specific key from the ini file', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('style', style_callback, 'check style of a build', arguments = [
             InputCommandArgument('f', 'fix style of a build', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('ps', ps_callback, 'list the ps output matching smartDeviceLinkCore', arguments = [
             InputCommandArgument('a', 'display instances from all users', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('gst', gst_callback, 'stream audio or video from core via gstreamer', arguments = [
             InputCommandArgument('build', 'build can be the number shown with list or the name of the build'),
-            InputCommandArgument('s', 'stream via socket', InputCommandArgumentType.OPTIONAL),
-            InputCommandArgument('p', 'stream via pipe', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('a', 'stream audio', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('v', 'stream video', InputCommandArgumentType.OPTIONAL) ],
-            notes = [ 'must supply one of -a or -v and one of -s or -p' ]),
+            notes = [ 'must supply one of -a or -v' ]),
     InputCommand('help', help_callback, 'learn how to use this script', ['?'])
 ]
 

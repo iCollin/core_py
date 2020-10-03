@@ -143,6 +143,8 @@ python core.py ini <build>
 		 open the ini config of a build in vim
 	 note:
 		 build can be the number shown with list or the name of the build
+	 optional parameters:
+	   <key>    key to read value of from an ini file
 
 python core.py style
 	 description:
@@ -161,10 +163,8 @@ python core.py gst <build>
                  stream audio or video from core via gstreamer
          note:
                  build can be the number shown with list or the name of the build
-                 must supply one of -a or -v and one of -s or -p
+                 must supply one of -a or -v
          optional parameters:
-           -s    stream via socket
-           -p    stream via pipe
            -a    stream audio
            -v    stream video
 
