@@ -14,7 +14,7 @@ to get started, just update the following path variables in core.py:
 ```
 python core.py list
 	 aliases:
-		q
+		ls, q
 	 description:
 		 list all currently installed builds
 	 optional parameters:
@@ -33,6 +33,7 @@ python core.py create <name>
 	 optional parameters:
 	   -t    build with tests
 	   -r    build in release mode
+	   -s    build with security off
 	   -e    build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY
 	   -h    build with -DEXTENDED_POLICY=HTTP
 	   -i    build with -DENABLE_IAP2EMULATION=ON
@@ -44,6 +45,7 @@ python core.py cmake
 	 optional parameters:
 	   -t    build with tests
 	   -r    build in release mode
+	   -s    build with security off
 	   -e    build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY
 	   -h    build with -DEXTENDED_POLICY=HTTP
 	   -i    build with -DENABLE_IAP2EMULATION=ON
@@ -55,6 +57,7 @@ python core.py make
 	   -j    build fast with all cores the cpu has
 	   -t    build with tests
 	   -r    build in release mode
+	   -s    build with security off
 	   -e    build with -DEXTENDED_POLICY=EXTERNAL_PROPRIETARY
 	   -h    build with -DEXTENDED_POLICY=HTTP
 	   -i    build with -DENABLE_IAP2EMULATION=ON
