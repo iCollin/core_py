@@ -154,7 +154,7 @@ def list_callback():
     print cprint.UNDERLINE + str(len(available_builds)) + ' builds found' + cprint.ENDC
     for i in range(0, len(available_builds)):
         print cprint.BOLD + '[' + str(i) + '] ' + available_builds[i] + cprint.ENDC
-        
+
         if os.path.exists(BUILDS_DIRECTORY + available_builds[i] + '/.created'):
             build_created = os.stat(BUILDS_DIRECTORY + available_builds[i] + '/.created').st_ctime
             print cprint.OKGREEN + '\tCreated: ' + time.ctime(build_created) + cprint.ENDC
@@ -206,7 +206,7 @@ def create_callback():
 
     os.chdir(BUILDS_DIRECTORY + build_name + '/core_build')
     cmake_callback()
-    
+
     subprocess.call(['time', 'make', '-j', str(get_cores()), 'install'])
 
 def cmake_callback():
@@ -219,6 +219,8 @@ def cmake_callback():
         cmake_args.append('-DENABLE_IAP2EMULATION=ON')
     if '-r' in sys.argv:
         cmake_args.append('-DCMAKE_BUILD_TYPE=Release')
+    if '-s' in sys.argv:
+        cmake_args.append('-DENABLE_SECURITY=OFF')
     if '-e' in sys.argv:
         cmake_args.append('-DEXTENDED_POLICY=EXTERNAL_PROPRIETARY')
     elif '-h' in sys.argv:
@@ -256,7 +258,7 @@ def test_callback():
 
     with open(config_path, "w") as f_w:
         f_w.write(new_config)
-    
+
     print cprint.OKGREEN + 'ATF updated to use ' + cprint.BOLD + build_name + cprint.ENDC
 
 def remove_callback():
@@ -329,7 +331,7 @@ def ini_callback():
 def ps_callback():
     ps_output = subprocess.check_output(['ps', 'aux'])
     ps_o_lines = ps_output.split('\n')
-    user_name = os.getlogin()
+    user_name = os.environ['USER']
     for line in ps_o_lines:
         if ('-a' in sys.argv or user_name in line) and 'smartDeviceLinkCore' in line:
             print(line)
@@ -342,7 +344,7 @@ def style_callback():
     if exit_code is 0:
         print cprint.OKGREEN + 'style of ' + sys.argv[2] + ' is good' + cprint.ENDC
     else:
-        print cprint.FAIL + 'style of ' + sys.argv[2] + ' has problems' + cprint.ENDC 
+        print cprint.FAIL + 'style of ' + sys.argv[2] + ' has problems' + cprint.ENDC
 
 def gst_callback():
     subprocess_args = ['gst-launch-1.0']
@@ -351,8 +353,8 @@ def gst_callback():
     stream_type = ('Audio' if is_audio else 'Video')
     consumer_ini_key = stream_type + 'StreamConsumer'
     consumer = ini_value(consumer_ini_key)
-    
-    if consumer is 'pipe':
+
+    if consumer == 'pipe':
         subprocess_args.append('filesrc')
         pipe_path_ini_key = 'Named' + stream_type + 'PipePath'
         pipe_name = ini_value(pipe_path_ini_key)
@@ -362,7 +364,7 @@ def gst_callback():
         subprocess_args.append('souphttpsrc')
         port = ini_value(stream_type + 'StreamingPort')
         subprocess_args.append('location=http://127.0.0.1:' + port)
-    
+
     subprocess_args.append('!')
 
     if is_audio:
@@ -386,7 +388,7 @@ def help_callback():
         cmd.help()
 
 supported_commands = [
-    InputCommand('list', list_callback, 'list all currently installed builds', [ 'q' ], [
+    InputCommand('list', list_callback, 'list all currently installed builds', [ 'ls', 'q' ], [
             InputCommandArgument('s', 'omit size info', InputCommandArgumentType.OPTIONAL),
             InputCommandArgument('g', 'omit git info', InputCommandArgumentType.OPTIONAL) ]),
     InputCommand('create', create_callback, 'clone, cmake and make a new build', [ 'build' ], [
