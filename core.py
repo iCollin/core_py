@@ -221,6 +221,8 @@ def cmake_callback():
         cmake_args.append('-DCMAKE_BUILD_TYPE=Release')
     if '-s' in sys.argv:
         cmake_args.append('-DENABLE_SECURITY=OFF')
+    if '-lb' in sys.argv:
+        cmake_args.append('-DLOGGER_NAME=BOOST')
     if '-e' in sys.argv:
         cmake_args.append('-DEXTENDED_POLICY=EXTERNAL_PROPRIETARY')
     elif '-h' in sys.argv:
@@ -249,10 +251,16 @@ def test_callback():
 
     path_to_sdl_index = data.index('config.pathToSDL')
     path_to_sdl_line_end = data.index('\n', path_to_sdl_index)
-    path_to_sdl_interfaces_index = data.index('config.pathToSDLInterfaces')
-    path_to_sdl_interfaces_line_end = data.index('\n', path_to_sdl_interfaces_index)
     new_path_to_sdl = 'config.pathToSDL = \"' + build_parent_dir + '/core_build/bin\"'
-    new_path_to_sdl_interfaces = 'config.pathToSDLInterfaces = \"' + build_parent_dir + '/sdl_core/src/components/interfaces\"'
+
+    try:
+        path_to_sdl_interfaces_index = data.index('config.pathToSDLInterfaces')
+        path_to_sdl_interfaces_line_end = data.index('\n', path_to_sdl_interfaces_index)
+        new_path_to_sdl_interfaces = 'config.pathToSDLInterfaces = \"' + build_parent_dir + '/sdl_core/src/components/interfaces\"'
+    except ValueError:
+        path_to_sdl_interfaces_index = data.index('config.pathToSDLSource')
+        path_to_sdl_interfaces_line_end = data.index('\n', path_to_sdl_interfaces_index)
+        new_path_to_sdl_interfaces = 'config.pathToSDLSource = \"' + build_parent_dir + '/sdl_core\"'
 
     new_config = data[:path_to_sdl_index] + new_path_to_sdl + data[path_to_sdl_line_end:path_to_sdl_interfaces_index] + new_path_to_sdl_interfaces + data[path_to_sdl_interfaces_line_end:]
 
@@ -290,6 +298,7 @@ def update_callback():
     subprocess.call(['git', 'fetch'])
     subprocess.call(['git', 'stash'])
     git_pull_log = subprocess.check_output(['git', 'pull', 'origin'])
+    subprocess.call(['git', 'submodule', 'update'])
     subprocess.call(['git', 'stash', 'pop'])
 
     if '-f' not in sys.argv and git_pull_log.startswith('Already up to date.'):
